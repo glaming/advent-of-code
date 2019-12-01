@@ -11,8 +11,24 @@ type module struct {
 	mass int64
 }
 
+// Fuel required to launch is calculate by mass / 3 - 2
+// However, that adds extra mass, and that mass adds extra, and so on...
 func (m module) fuelRequiredToLaunch() int64 {
-	return (m.mass / 3) - 2
+	var fuelRequired, newMass int64
+
+	newMass = m.mass
+	for {
+		fuelForMass := (newMass / 3) - 2
+
+		if fuelForMass <= 0 {
+			break
+		}
+
+		fuelRequired += fuelForMass
+		newMass = fuelForMass
+	}
+
+	return fuelRequired
 }
 
 func readModuleMasses(filename string) (ms []module, err error) {
