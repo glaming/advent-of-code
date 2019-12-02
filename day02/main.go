@@ -79,25 +79,38 @@ loop:
 	return t, nil
 }
 
-func restoreProgram(t tape) tape {
-	t[1] = 12
-	t[2] = 2
+func restoreProgram(t tape, noun, verb intcode) tape {
+	t[1] = noun
+	t[2] = verb
 
 	return t
 }
 
 func main() {
-	t, err := readTape("input.txt")
+	originalTape, err := readTape("input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	t = restoreProgram(t)
+	desiredOutput := 19690720
 
-	t, err = executeIntcode(t)
-	if err != nil {
-		log.Fatal(err)
+	// Try different nouns, verbs until we find the one where t[0] = desiredOutput
+	for noun := 0; noun <= 99; noun++ {
+		for verb := 0; verb <= 99; verb++ {
+			t := append(tape(nil), originalTape...)
+
+			t = restoreProgram(t, intcode(noun), intcode(verb))
+			t, err = executeIntcode(t)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if t[0] == intcode(desiredOutput) {
+				fmt.Printf("found noun, verb: %d, %d\n", noun, verb)
+				return
+			}
+		}
 	}
 
-	fmt.Printf("resulting tape:\n%s\n", t)
+	fmt.Println("Uh-oh... Didn't find an appropriate noun, verb")
 }
