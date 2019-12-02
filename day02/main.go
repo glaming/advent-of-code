@@ -79,11 +79,20 @@ loop:
 	return t, nil
 }
 
+func restoreProgram(t tape) tape {
+	t[1] = 12
+	t[2] = 2
+
+	return t
+}
+
 func main() {
 	t, err := readTape("input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	t = restoreProgram(t)
 
 	t, err = executeIntcode(t)
 	if err != nil {
