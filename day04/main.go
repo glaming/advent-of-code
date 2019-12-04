@@ -35,6 +35,25 @@ func isNumStrValid(ns string) bool {
 		}
 	}
 
+	// Are two digits not part of a larger group of digits
+	var prevSeen uint8
+	for i := range ns {
+		if i == len(ns)-1 {
+			return false
+		}
+		if ns[i] == ns[i+1] && ns[i] != prevSeen {
+			if i+1 == len(ns)-1 {
+				break
+			}
+			if ns[i] == ns[i+2] {
+				prevSeen = ns[i]
+				continue
+			} else {
+				break
+			}
+		}
+	}
+
 	return true
 }
 
