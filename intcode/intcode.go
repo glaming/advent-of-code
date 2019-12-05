@@ -3,6 +3,7 @@ package intcode
 import (
 	"encoding/csv"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -14,11 +15,12 @@ type (
 	Tape []intcode
 )
 
-
 const (
-	opcodeAdd  intcode = 1
-	opcodeMul  intcode = 2
-	opcodeHalt intcode = 99
+	opcodeAdd    intcode = 1
+	opcodeMul    intcode = 2
+	opcodeInput  intcode = 3
+	opcodeOutput intcode = 4
+	opcodeHalt   intcode = 99
 )
 
 func (t Tape) String() string {
@@ -68,23 +70,44 @@ func RestoreProgram(t Tape, noun, verb int) Tape {
 }
 
 // Assuming that the tape is valid
-func Execute(t Tape) (Tape, error) {
+func Execute(t Tape, input io.Reader, output io.Writer) (Tape, error) {
 	headPos := 0
 
 loop:
 	for {
 		switch t[headPos] {
 		case opcodeHalt:
+			headPos = headPos + 1
 			break loop
 		case opcodeAdd:
 			t[t[headPos+3]] = t[t[headPos+1]] + t[t[headPos+2]]
+			headPos = headPos + 4
 		case opcodeMul:
 			t[t[headPos+3]] = t[t[headPos+1]] * t[t[headPos+2]]
+			headPos = headPos + 4
+		case opcodeInput:
+			in := make([]byte, 100)
+			n, err := input.Read(in)
+			if err != nil {
+				return nil, fmt.Errorf("got error on reading from tapeInput: %s", err)
+			}
+			val, err := strconv.Atoi(string(in[:n]))
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert tapeInput to int: %s", err)
+			}
+
+			t[t[headPos+1]] = intcode(val)
+
+			headPos = headPos + 2
+		case opcodeOutput:
+			val := int(t[t[headPos+1]])
+			out := strconv.Itoa(val)
+			output.Write([]byte(out))
+
+			headPos = headPos + 2
 		default:
 			return nil, fmt.Errorf("unknown opcode %d at tape position %d", t[headPos], headPos)
 		}
-
-		headPos = headPos + 4
 	}
 
 	return t, nil
