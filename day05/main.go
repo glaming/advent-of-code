@@ -14,7 +14,7 @@ func main() {
 	}
 
 	var output bytes.Buffer
-	tape, err = intcode.Execute(tape, strings.NewReader("1"), &output)
+	tape, err = intcode.Execute(tape, strings.NewReader("5"), &output)
 	if err != nil {
 		log.Fatal(err)
 	}

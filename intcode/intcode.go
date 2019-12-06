@@ -22,6 +22,10 @@ const (
 	opcodeMul    opcode = 2
 	opcodeInput  opcode = 3
 	opcodeOutput opcode = 4
+	opcodeJmpIfT opcode = 5
+	opcodeJmpIfF opcode = 6
+	opcodeLT     opcode = 7
+	opcodeEq     opcode = 8
 	opcodeHalt   opcode = 99
 
 	paramModePosition  parameterMode = 0
@@ -150,6 +154,35 @@ loop:
 			output.Write([]byte(out))
 
 			headPos = headPos + 2
+		case opcodeJmpIfT:
+			if params[0] != 0 {
+				headPos = int(params[1])
+			} else {
+				headPos = headPos + 3
+			}
+		case opcodeJmpIfF:
+			if params[0] == 0 {
+				headPos = int(params[1])
+			} else {
+				headPos = headPos + 3
+
+			}
+		case opcodeLT:
+			if params[0] < params[1] {
+				t[t[headPos+3]] = 1
+			} else {
+				t[t[headPos+3]] = 0
+			}
+
+			headPos = headPos + 4
+		case opcodeEq:
+			if params[0] == params[1] {
+				t[t[headPos+3]] = 1
+			} else {
+				t[t[headPos+3]] = 0
+			}
+
+			headPos = headPos + 4
 		default:
 			return nil, fmt.Errorf("unknown opcode %d at tape position %d", t[headPos], headPos)
 		}
