@@ -14,7 +14,7 @@ type TapeTest struct {
 type TapeTestIO struct {
 	tapeInput, tapeExpected Tape
 	input                   io.Reader
-	output                  io.ReadWriter
+	output                  bytes.Buffer
 	outputExpected          string
 }
 
@@ -50,11 +50,11 @@ func TestExecute(t *testing.T) {
 
 func TestExecute_InputOutput(t *testing.T) {
 	tt := []TapeTestIO{
-		{Tape{3, 0, 4, 0, 99}, Tape{52, 0, 4, 0, 99}, strings.NewReader("52"), &bytes.Buffer{}, "52"},
+		{Tape{3, 0, 4, 0, 99}, Tape{52, 0, 4, 0, 99}, strings.NewReader("52"), bytes.Buffer{}, "52"},
 	}
 
 	for i, test := range tt {
-		output, err := Execute(test.tapeInput, test.input, test.output)
+		output, err := Execute(test.tapeInput, test.input, &test.output)
 		if err != nil {
 			t.Errorf("test %d failed - error %s", i+1, err)
 			continue
@@ -64,13 +64,8 @@ func TestExecute_InputOutput(t *testing.T) {
 			t.Errorf("test %d failed - tapeInput %s, expected %s, got %s", i+1, test.tapeInput, test.tapeExpected, output)
 		}
 
-		givenOutput := make([]byte, 100)
-		n, err := test.output.Read(givenOutput)
-		if err != nil {
-			t.Errorf("test %d failed - failed to read from output", i+1)
-		}
-		if string(givenOutput[:n]) != test.outputExpected {
-			t.Errorf("test %d failed - expected %s, got %s", i+1, test.outputExpected, string(givenOutput[:n]))
+		if test.output.String() != test.outputExpected {
+			t.Errorf("test %d failed - expected %s, got %s", i+1, test.outputExpected, test.output.String())
 		}
 	}
 }
