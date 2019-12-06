@@ -65,13 +65,31 @@ func TestExecute_InputOutput(t *testing.T) {
 		}
 
 		givenOutput := make([]byte, 100)
-		 n, err := test.output.Read(givenOutput)
-		 if err != nil {
+		n, err := test.output.Read(givenOutput)
+		if err != nil {
 			t.Errorf("test %d failed - failed to read from output", i+1)
-		 }
-		 if string(givenOutput[:n]) != test.outputExpected {
-			 t.Errorf("test %d failed - expected %s, got %s", i+1, test.outputExpected, string(givenOutput[:n]))
-		 }
+		}
+		if string(givenOutput[:n]) != test.outputExpected {
+			t.Errorf("test %d failed - expected %s, got %s", i+1, test.outputExpected, string(givenOutput[:n]))
+		}
+	}
+}
+
+func TestExecute_ParameterModes(t *testing.T) {
+	tt := []TapeTest{
+		{Tape{1002, 4, 3, 4, 33}, Tape{1002, 4, 3, 4, 99}},
+		{Tape{1101, 100, -1, 4, 0}, Tape{1101, 100, -1, 4, 99}},
 	}
 
+	for i, test := range tt {
+		output, err := Execute(test.tapeInput, &bytes.Buffer{}, &bytes.Buffer{})
+		if err != nil {
+			t.Errorf("test %d failed - error %s", i+1, err)
+			continue
+		}
+
+		if output.String() != test.tapeExpected.String() {
+			t.Errorf("test %d failed - tapeInput %s, expected %s, got %s", i+1, test.tapeInput, test.tapeExpected, output)
+		}
+	}
 }
