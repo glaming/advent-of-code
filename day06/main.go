@@ -12,7 +12,11 @@ type (
 	orbits map[object][]object
 )
 
-const COM = object("COM")
+const (
+	COM = object("COM")
+	YOU = object("YOU")
+	SAN = object("SAN")
+)
 
 func readOrbits(filename string) (orbits, error) {
 	file, err := os.Open(filename)
@@ -50,6 +54,32 @@ func sumOrbits(orbits orbits, from object, depth int) int {
 	return total
 }
 
+func sumOrbitTransfers(orbits orbits, from object) (found int, depth int) {
+	if from == YOU || from == SAN {
+		return 1, 0
+	}
+
+	if _, ok := orbits[from]; !ok {
+		return 0, 0
+	}
+
+	for _, obj := range orbits[from] {
+		f, d := sumOrbitTransfers(orbits, obj)
+		found += f
+		depth += d
+	}
+
+	if found == 1 {
+		return 1, depth + 1
+	}
+	if found == 2 {
+		return 2, depth
+	}
+
+	return 0, 0
+
+}
+
 func main() {
 	orbits, err := readOrbits("day06/input.txt")
 	if err != nil {
@@ -59,4 +89,9 @@ func main() {
 	totalOrbits := sumOrbits(orbits, COM, 0)
 
 	log.Printf("total number orbits: %d\n", totalOrbits)
+
+	_, totalOrbitTransfers := sumOrbitTransfers(orbits, COM)
+
+	log.Printf("total orbit transfers: %d\n", totalOrbitTransfers)
+
 }
