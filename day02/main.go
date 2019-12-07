@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"github.com/glaming/advent-of-code-2019/intcode"
@@ -21,7 +22,7 @@ func main() {
 			t := append(intcode.Tape(nil), originalTape...)
 
 			t = intcode.RestoreProgram(t, noun, verb)
-			t, err = intcode.Execute(t, &bytes.Buffer{}, &bytes.Buffer{})
+			t, err = intcode.Execute(t, bufio.NewScanner(nil), &bytes.Buffer{})
 			if err != nil {
 				log.Fatal(err)
 			}

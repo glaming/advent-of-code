@@ -1,6 +1,7 @@
 package intcode
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 	"strings"
@@ -35,7 +36,7 @@ func TestExecute(t *testing.T) {
 	}...)
 
 	for i, test := range tt {
-		output, err := Execute(test.tapeInput, &bytes.Buffer{}, &bytes.Buffer{})
+		output, err := Execute(test.tapeInput, bufio.NewScanner(nil), &bytes.Buffer{})
 		if err != nil {
 			t.Errorf("test %d failed - error %s", i+1, err)
 			continue
@@ -54,7 +55,7 @@ func TestExecute_InputOutput(t *testing.T) {
 	}
 
 	for i, test := range tt {
-		output, err := Execute(test.tapeInput, test.input, &test.output)
+		output, err := Execute(test.tapeInput, bufio.NewScanner(test.input), &test.output)
 		if err != nil {
 			t.Errorf("test %d failed - error %s", i+1, err)
 			continue
@@ -77,7 +78,7 @@ func TestExecute_ParameterModes(t *testing.T) {
 	}
 
 	for i, test := range tt {
-		output, err := Execute(test.tapeInput, &bytes.Buffer{}, &bytes.Buffer{})
+		output, err := Execute(test.tapeInput, bufio.NewScanner(nil), &bytes.Buffer{})
 		if err != nil {
 			t.Errorf("test %d failed - error %s", i+1, err)
 			continue
@@ -125,7 +126,7 @@ func TestExecute_JumpAndConditionals(t *testing.T) {
 	}
 
 	for i, test := range tt {
-		_, err := Execute(test.tapeInput, test.input, &test.output)
+		_, err := Execute(test.tapeInput, bufio.NewScanner(test.input), &test.output)
 		if err != nil {
 			t.Errorf("test %d failed - error %s", i+1, err)
 			continue

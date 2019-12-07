@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"github.com/glaming/advent-of-code-2019/intcode"
 	"log"
@@ -14,7 +15,8 @@ func main() {
 	}
 
 	var output bytes.Buffer
-	tape, err = intcode.Execute(tape, strings.NewReader("5"), &output)
+	input := bufio.NewScanner(strings.NewReader("5"))
+	tape, err = intcode.Execute(tape, input, &output)
 	if err != nil {
 		log.Fatal(err)
 	}
