@@ -1,13 +1,10 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"github.com/glaming/advent-of-code-2019/intcode"
 	"log"
-	"strconv"
-	"strings"
+	"sync"
 )
 
 func runAmplifierSequence(tape intcode.Tape, phaseSettings []int) (int, error) {
@@ -16,20 +13,23 @@ func runAmplifierSequence(tape intcode.Tape, phaseSettings []int) (int, error) {
 		t := make(intcode.Tape, len(tape))
 		copy(t, tape)
 
-		input := strings.NewReader(fmt.Sprintf("%d\n%d\n", phaseSettings[amp], inputSignal))
-		output := bytes.Buffer{}
-		_, err := intcode.Execute(t, bufio.NewScanner(input), &output)
+		var wg sync.WaitGroup
+		in, out := make(chan int), make(chan int)
+
+		wg.Add(1)
+		go func() {
+			in <- phaseSettings[amp]
+			in <- inputSignal
+			inputSignal = <-out
+			wg.Done()
+		}()
+
+		_, err := intcode.Execute(t, in, out)
 		if err != nil {
 			return 0, fmt.Errorf("error running amplifer %d: %s", amp, err)
 		}
 
-		outputVal, err := strconv.Atoi(output.String())
-		if err != nil {
-			return 0, fmt.Errorf("error converting output to int for amp %d: %s", amp, err)
-
-		}
-
-		inputSignal = outputVal
+		wg.Wait()
 	}
 
 	return inputSignal, nil

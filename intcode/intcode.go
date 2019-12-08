@@ -1,10 +1,8 @@
 package intcode
 
 import (
-	"bufio"
 	"encoding/csv"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -109,7 +107,7 @@ func RestoreProgram(t Tape, noun, verb int) Tape {
 }
 
 // Assuming that the tape is valid
-func Execute(t Tape, input *bufio.Scanner, output io.Writer) (Tape, error) {
+func Execute(t Tape, input chan int, output chan int) (Tape, error) {
 	headPos := 0
 
 loop:
@@ -136,24 +134,12 @@ loop:
 			t[t[headPos+3]] = params[0] * params[1]
 			headPos = headPos + 4
 		case opcodeInput:
-			input.Scan()
-			line := input.Text()
-			if input.Err() != nil {
-				return nil, fmt.Errorf("got error on reading from tapeInput: %s", input.Err())
-			}
-			val, err := strconv.Atoi(line)
-			if err != nil {
-				return nil, fmt.Errorf("failed to convert tapeInput to int: %s", err)
-			}
-
+			val := <-input
 			t[t[headPos+1]] = intcode(val)
-
 			headPos = headPos + 2
 		case opcodeOutput:
 			val := int(params[0])
-			out := strconv.Itoa(val)
-			output.Write([]byte(out))
-
+			output <- val
 			headPos = headPos + 2
 		case opcodeJmpIfT:
 			if params[0] != 0 {

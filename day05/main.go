@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"github.com/glaming/advent-of-code-2019/intcode"
 	"log"
-	"strings"
+	"sync"
 )
 
 func main() {
@@ -14,12 +12,24 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var output bytes.Buffer
-	input := bufio.NewScanner(strings.NewReader("5"))
-	tape, err = intcode.Execute(tape, input, &output)
+	var wg sync.WaitGroup
+	var outputVal int
+	in, out := make(chan int), make(chan int)
+
+	wg.Add(1)
+	go func() {
+		in <- 5
+		outputVal = <-out
+		wg.Done()
+	}()
+
+	tape, err = intcode.Execute(tape, in, out)
+
+	wg.Wait()
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("output:\n%s\n", output.String())
+	log.Printf("output:\n%d\n", outputVal)
 }
