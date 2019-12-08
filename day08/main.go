@@ -64,6 +64,19 @@ func layerWithLeast(image [][]int, i int) []int {
 	return lcs[0].layer
 }
 
+func render(image [][]int, pxWidth, pxHeight int) []int {
+	var rendered []int
+	for i := 0; i < pxWidth*pxHeight; i++ {
+		for _, l := range image {
+			if l[i] <= 1 {
+				rendered = append(rendered, l[i])
+				break
+			}
+		}
+	}
+	return rendered
+}
+
 func main() {
 	image, err := readSpecialImageFormat("day08/input.txt", 25, 6)
 	if err != nil {
@@ -75,4 +88,16 @@ func main() {
 	twos := countInt(2, l)
 
 	log.Printf("1s * 2s: %d", ones*twos)
+
+	imageRendered := render(image, 25, 6)
+	for i, p := range imageRendered {
+		if i%25 == 0 {
+			println()
+		}
+		if p == 1 {
+			print(p)
+		} else {
+			print(" ")
+		}
+	}
 }
