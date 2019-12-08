@@ -9,28 +9,42 @@ import (
 
 func runAmplifierSequence(tape intcode.Tape, phaseSettings []int) (int, error) {
 	inputSignal := 0
+
+	var wg sync.WaitGroup
+
+	var chs []chan int
+	for i := 0; i < 5; i++ {
+		chs = append(chs, make(chan int))
+	}
+	chs = append(chs, chs[0])
+
+	go func() {
+		for i := 0; i < 5; i++ {
+			chs[i] <- phaseSettings[i]
+		}
+		chs[0] <- 0
+	}()
+
+	// Only adding 4 as want last amplifier to be active for final read
+	// If included in above go func then the feedback loop won't be read correctly
+	wg.Add(4)
 	for amp := 0; amp < 5; amp++ {
 		t := make(intcode.Tape, len(tape))
 		copy(t, tape)
 
-		var wg sync.WaitGroup
-		in, out := make(chan int), make(chan int)
-
-		wg.Add(1)
-		go func() {
-			in <- phaseSettings[amp]
-			in <- inputSignal
-			inputSignal = <-out
+		go func(i int) {
+			// Not handling error...
+			_, _ = intcode.Execute(t, chs[i], chs[i+1])
 			wg.Done()
-		}()
-
-		_, err := intcode.Execute(t, in, out)
-		if err != nil {
-			return 0, fmt.Errorf("error running amplifer %d: %s", amp, err)
-		}
-
-		wg.Wait()
+		}(amp)
 	}
+
+	wg.Wait()
+
+	// Adding so WaitGroup doesn't panic when count < 0
+	wg.Add(1)
+
+	inputSignal = <-chs[5]
 
 	return inputSignal, nil
 }
@@ -43,15 +57,15 @@ func runeToInt(r rune) int {
 }
 
 // Looking to find the settings for maximal signal output
-func findPhaseSettings(tape intcode.Tape) ([]int, int, error) {
+func findPhaseSettings(tape intcode.Tape, psStart, psEnd rune) ([]int, int, error) {
 	// Find valid phases to test
 	var phasesToTest [][]int
 loop:
-	for i := 0; i <= 55555; i++ {
+	for i := 0; i <= 99999; i++ {
 		var ps []int
 		phaseStr := fmt.Sprintf("%05d", i)
 		for _, p := range phaseStr {
-			if p < '0' || p > '4' {
+			if p < psStart || p > psEnd {
 				continue loop
 			}
 
@@ -90,11 +104,17 @@ func main() {
 		log.Panic(err)
 	}
 
-	ps, signal, err := findPhaseSettings(tape)
+	ps, signal, err := findPhaseSettings(tape, '0', '4')
 	if err != nil {
 		log.Panic(err)
 	}
 
 	log.Printf("Phase settings: %v\nMax signal: %d", ps, signal)
 
+	psFbl, signalFbl, err := findPhaseSettings(tape, '5', '9')
+	if err != nil {
+		log.Panic(err)
+	}
+
+	log.Printf("Phase settings: %v\nMax signal: %d", psFbl, signalFbl)
 }

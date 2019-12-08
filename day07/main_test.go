@@ -41,7 +41,7 @@ func TestRunAmplifierSequence(t *testing.T) {
 
 func TestFindPhaseSettings(t *testing.T) {
 	for i, test := range testTable {
-		ps, _, err := findPhaseSettings(test.tape)
+		ps, _, err := findPhaseSettings(test.tape, '0', '4')
 		if err != nil {
 			t.Errorf("test %d, encountered error %s", i+1, err)
 		}
