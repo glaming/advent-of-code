@@ -25,10 +25,12 @@ const (
 	opcodeJmpIfF opcode = 6
 	opcodeLT     opcode = 7
 	opcodeEq     opcode = 8
+	opcodeRelAdj opcode = 9
 	opcodeHalt   opcode = 99
 
 	paramModePosition  parameterMode = 0
 	paramModeImmediate parameterMode = 1
+	paramModeRelative  parameterMode = 2
 )
 
 func (t Tape) String() string {
@@ -52,26 +54,55 @@ func (t Tape) getIntcode(index int) intcode {
 	return t[index]
 }
 
-func (t Tape) value(p intcode, pm parameterMode) (intcode, error) {
+func (t Tape) value(p intcode, pm parameterMode, relativeBase int) (intcode, error) {
 	switch pm {
 	case paramModePosition:
 		return t.getIntcode(int(p)), nil
 	case paramModeImmediate:
 		return p, nil
+	case paramModeRelative:
+		return t.getIntcode(int(p) + relativeBase), nil
 	default:
 		return -1, fmt.Errorf("unknown parameter mode %d", p)
 	}
 }
 
+// This is a hack to get the length to be satisfactory
+func (t Tape) set(pm parameterMode, rb int, i, p intcode) Tape {
+	currentLen := len(t)
+	index := int(i)
+	if index > currentLen-1 {
+		zeros := make([]intcode, index-currentLen+1)
+		t = append(t, zeros...)
+	}
+	switch pm {
+	case paramModePosition:
+		t[index] = p
+	case paramModeImmediate:
+		panic("setting tape value with immediate positioning - this shouldn't have happened")
+	case paramModeRelative:
+		t[index+rb] = p
+	}
+	return t
+}
+
+func runeToInt(r rune) int {
+	if r >= '0' && r <= '9' {
+		return int(r - '0')
+	}
+	return -1
+}
+
 func (i intcode) parse() (opcode, []parameterMode) {
-	iVal := int(i)
+	var pms [3]parameterMode
 
-	opVal := iVal % 100
-	pm1Val := ((iVal - opVal) / 100) % 2
-	pm2Val := ((iVal - pm1Val - opVal) / 1000) % 2
-	pm3Val := ((iVal - pm2Val - pm1Val - opVal) / 10000) % 2
+	iStr := fmt.Sprintf("%05d", int(i))
+	for index, r := range iStr[:3] {
+		pms[index] = parameterMode(runeToInt(r))
+	}
 
-	return opcode(opVal), []parameterMode{parameterMode(pm1Val), parameterMode(pm2Val), parameterMode(pm3Val)}
+	opVal := int(i) % 100
+	return opcode(opVal), []parameterMode{pms[2], pms[1], pms[0]}
 }
 
 func ReadTape(filename string) (Tape, error) {
@@ -107,8 +138,10 @@ func RestoreProgram(t Tape, noun, verb int) Tape {
 }
 
 // Assuming that the tape is valid
+// TODO: Should really turn Tape into a struct at this point
 func Execute(t Tape, input chan int, output chan int) (Tape, error) {
 	headPos := 0
+	relativeBase := 0
 
 loop:
 	for {
@@ -116,7 +149,7 @@ loop:
 
 		var params []intcode
 		for i, pm := range pms {
-			ic, err := t.value(t.getIntcode(headPos+1+i), pm)
+			ic, err := t.value(t.getIntcode(headPos+1+i), pm, relativeBase)
 			if err != nil {
 				return nil, err
 			}
@@ -128,14 +161,14 @@ loop:
 			headPos = headPos + 1
 			break loop
 		case opcodeAdd:
-			t[t[headPos+3]] = params[0] + params[1]
+			t = t.set(pms[2], relativeBase, t[headPos+3], params[0]+params[1])
 			headPos = headPos + 4
 		case opcodeMul:
-			t[t[headPos+3]] = params[0] * params[1]
+			t = t.set(pms[2], relativeBase, t[headPos+3], params[0]*params[1])
 			headPos = headPos + 4
 		case opcodeInput:
 			val := <-input
-			t[t[headPos+1]] = intcode(val)
+			t = t.set(pms[0], relativeBase, t[headPos+1], intcode(val))
 			headPos = headPos + 2
 		case opcodeOutput:
 			val := int(params[0])
@@ -156,20 +189,23 @@ loop:
 			}
 		case opcodeLT:
 			if params[0] < params[1] {
-				t[t[headPos+3]] = 1
+				t = t.set(pms[2], relativeBase, t[headPos+3], 1)
 			} else {
-				t[t[headPos+3]] = 0
+				t = t.set(pms[2], relativeBase, t[headPos+3], 0)
 			}
 
 			headPos = headPos + 4
 		case opcodeEq:
 			if params[0] == params[1] {
-				t[t[headPos+3]] = 1
+				t = t.set(pms[2], relativeBase, t[headPos+3], 1)
 			} else {
-				t[t[headPos+3]] = 0
+				t = t.set(pms[2], relativeBase, t[headPos+3], 0)
 			}
 
 			headPos = headPos + 4
+		case opcodeRelAdj:
+			relativeBase += int(params[0])
+			headPos = headPos + 2
 		default:
 			return nil, fmt.Errorf("unknown opcode %d at tape position %d", t[headPos], headPos)
 		}

@@ -1,8 +1,10 @@
 package intcode
 
 import (
+	"reflect"
 	"sync"
 	"testing"
+	"time"
 )
 
 type TapeTest struct {
@@ -12,6 +14,11 @@ type TapeTest struct {
 type TapeTestIO struct {
 	tapeInput, tapeExpected Tape
 	input, outputExpected   int
+}
+
+type TapeTestIOMultiple struct {
+	tapeInput, tapeExpected Tape
+	input, outputExpected   []int
 }
 
 func TestExecute(t *testing.T) {
@@ -157,6 +164,69 @@ func TestExecute_JumpAndConditionals(t *testing.T) {
 
 		if outputVal != test.outputExpected {
 			t.Errorf("test %d failed - expected %d, got %d", i+1, test.outputExpected, outputVal)
+		}
+	}
+}
+
+func TestExecute_RelativeBaseAndLargeNum(t *testing.T) {
+	tt := []TapeTestIOMultiple{
+		{Tape{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99}, nil, nil, []int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99, 0}},
+		{Tape{1102, 34915192, 34915192, 7, 4, 7, 99, 0}, Tape{1102, 34915192, 34915192, 7, 4, 7, 99, 1219070632396864}, nil, []int{1219070632396864}},
+		{Tape{104, 1125899906842624, 99}, Tape{104, 1125899906842624, 99}, nil, []int{1125899906842624}},
+	}
+
+	//// Supplementary test cases from https://www.reddit.com/r/adventofcode/comments/e8aw9j/2019_day_9_part_1_how_to_fix_203_error/fabotzi
+	tt = append(tt, []TapeTestIOMultiple{
+		{Tape{109, -1, 4, 1, 99}, nil, nil, []int{-1}},
+		{Tape{109, -1, 104, 1, 99}, nil, nil, []int{1}},
+		{Tape{109, -1, 204, 1, 99}, nil, nil, []int{109}},
+		{Tape{109, 1, 9, 2, 204, -6, 99}, nil, nil, []int{204}},
+		{Tape{109, 1, 109, 2, 204, 1, 99}, nil, nil, []int{204}},
+		{Tape{109, 1, 209, 0, 204, 2, 99}, nil, nil, []int{204}},
+	}...)
+
+	// Supplementary case... getting error opcode 203 from BOOST
+	tt = append(tt, []TapeTestIOMultiple{
+		{Tape{109, 10, 203, 0, 4, 10, 99, 0, 0, 0, 0}, nil, []int{42}, []int{42}},
+	}...)
+
+	for i, test := range tt {
+		var wg sync.WaitGroup
+		var outputs []int
+		in, out := make(chan int), make(chan int)
+
+		wg.Add(1)
+		go func() {
+			for _, v := range test.input {
+				in <- v
+			}
+
+			for {
+				select {
+				case v := <-out:
+					outputs = append(outputs, v)
+				case <-time.After(100 * time.Millisecond):
+					wg.Done()
+					return
+				}
+			}
+		}()
+
+		outputTape, err := Execute(test.tapeInput, in, out)
+
+		wg.Wait()
+
+		if err != nil {
+			t.Errorf("test %d failed - error %s", i+1, err)
+			continue
+		}
+
+		if test.tapeExpected != nil && outputTape.String() != test.tapeExpected.String() {
+			t.Errorf("test %d failed - tapeInput %s, expected %s, got %s", i+1, test.tapeInput, test.tapeExpected, outputTape)
+		}
+
+		if !reflect.DeepEqual(outputs, test.outputExpected) {
+			t.Errorf("test %d failed - expected %v, got %v", i+1, test.outputExpected, outputs)
 		}
 	}
 }
