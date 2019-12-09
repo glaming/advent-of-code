@@ -19,7 +19,7 @@ func main() {
 
 	wg.Add(1)
 	go func() {
-		in <- 1
+		in <- 2
 
 		for {
 			select {

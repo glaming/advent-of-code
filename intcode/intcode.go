@@ -70,19 +70,23 @@ func (t Tape) value(p intcode, pm parameterMode, relativeBase int) (intcode, err
 // This is a hack to get the length to be satisfactory
 func (t Tape) set(pm parameterMode, rb int, i, p intcode) Tape {
 	currentLen := len(t)
-	index := int(i)
+	var index int
+
+	switch pm {
+	case paramModePosition:
+		index = int(i)
+	case paramModeImmediate:
+		panic("setting tape value with immediate positioning - this shouldn't have happened")
+	case paramModeRelative:
+		index = int(i) + rb
+	}
+
 	if index > currentLen-1 {
 		zeros := make([]intcode, index-currentLen+1)
 		t = append(t, zeros...)
 	}
-	switch pm {
-	case paramModePosition:
-		t[index] = p
-	case paramModeImmediate:
-		panic("setting tape value with immediate positioning - this shouldn't have happened")
-	case paramModeRelative:
-		t[index+rb] = p
-	}
+
+	t[index] = p
 	return t
 }
 
