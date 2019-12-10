@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -106,6 +108,59 @@ func bestLocation(asteroids []point) (point, int) {
 	return best, count
 }
 
+func angle(a, b point) float64 {
+	return math.Mod(math.Atan2(float64(b.x-a.x), float64(a.y-b.y)), 2*math.Pi)
+}
+
+// Return the order in which they're vaporised
+func vaporise(p point, asteroids []point) []point {
+	lines := map[float64][]point{}
+
+	for _, aster := range asteroids {
+		if aster == p {
+			continue
+		}
+
+		a := angle(p, aster)
+
+		if a < 0 {
+			a += 2 * math.Pi
+		}
+
+		lines[a] = append(lines[a], aster)
+	}
+
+	var angles []float64
+	for a := range lines {
+		angles = append(angles, a)
+		sort.Slice(lines[a], func(i, j int) bool {
+			return isBetween(p, lines[a][j], lines[a][i])
+		})
+	}
+	sort.Float64s(angles)
+
+	var vaporised []point
+	for {
+		moreToVaporise := false
+
+		for _, a := range angles {
+			if len(lines[a]) > 0 {
+				var x point
+				x, lines[a] = lines[a][0], lines[a][1:]
+				vaporised = append(vaporised, x)
+
+				moreToVaporise = true
+			}
+		}
+
+		if !moreToVaporise {
+			break
+		}
+	}
+
+	return vaporised
+}
+
 func main() {
 	m, err := readMapFile("day10/input.txt")
 	if err != nil {
@@ -120,4 +175,8 @@ func main() {
 	a, count := bestLocation(as)
 
 	log.Printf("Best position: %v\nBest count: %d\n", a, count)
+
+	as = vaporise(a, as)
+
+	log.Printf("200th to be vaporised: %v\n", as[199])
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -67,5 +68,38 @@ func TestAsteroidsVisibleFrom(t *testing.T) {
 		if count != test.count {
 			t.Errorf("test %d failed - expected %d, got %d", i+1, test.count, count)
 		}
+	}
+}
+
+func TestVaporise(t *testing.T) {
+	m := `
+		.#..#
+		.....
+		#####
+		....#
+		...##
+	`
+
+	expected := []point{
+		{3, 2},
+		{4, 0},
+		{4, 2},
+		{4, 3},
+		{4, 4},
+		{0, 2},
+		{1, 2},
+		{2, 2},
+		{1, 0},
+	}
+
+	// Format map string... Remove tabs + extra spaces
+	m = strings.Replace(strings.TrimSpace(m), "\t", "", -1)
+	as, _ := getAsteroids(m)
+	p, _ := bestLocation(as)
+
+	order := vaporise(p, as)
+
+	if !reflect.DeepEqual(order, expected) {
+		t.Error("test failed - out of order")
 	}
 }
