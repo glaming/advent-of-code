@@ -116,6 +116,61 @@ func calculateEnergy(ms []moon) int {
 	return energy
 }
 
+func stepsUntilInit(msInit []moon) {
+	ms := make([]moon, len(msInit))
+	copy(ms, msInit)
+
+	phases := [3]int{}
+
+	for i := 0; ; i++ {
+		ms = applyGravity(ms)
+		ms = applyVelocity(ms)
+
+		for p := 0; p < 3; p++ {
+			if phases[p] != 0 {
+				continue
+			}
+
+			valid := true
+			for i := range ms {
+				// Should consider x, y, z, independently... Would be easier here
+				if p == 0 {
+					if ms[i].position.x != msInit[i].position.x || ms[i].velocity.x != 0 {
+						valid = false
+						break
+					}
+				} else if p == 1 {
+					if ms[i].position.y != msInit[i].position.y || ms[i].velocity.y != 0 {
+						valid = false
+						break
+					}
+				} else {
+					if ms[i].position.z != msInit[i].position.z || ms[i].velocity.z != 0 {
+						valid = false
+						break
+					}
+				}
+			}
+
+			if valid {
+				phases[p] = i + 1
+			}
+		}
+
+		completed := true
+		for _, p := range phases {
+			if p == 0 {
+				completed = false
+			}
+		}
+
+		if completed {
+			log.Printf("Phases: %d, %d, %d\n", phases[0], phases[1], phases[2])
+			break
+		}
+	}
+}
+
 func main() {
 	ms, err := readMoons("day12/input.txt")
 	if err != nil {
@@ -130,4 +185,12 @@ func main() {
 	energy := calculateEnergy(ms)
 
 	log.Printf("Total energy: %d", energy)
+
+	// Part 2
+	ms, err = readMoons("day12/input.txt")
+	if err != nil {
+		log.Panic(err)
+	}
+
+	stepsUntilInit(ms)
 }
