@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/glaming/advent-of-code-2019/intcode"
 	"log"
+	"sync"
+	"time"
 )
 
 type (
@@ -28,15 +30,23 @@ func main() {
 	}
 
 	grid := make(map[point]tile)
+
+	var wg sync.WaitGroup
 	in, out := make(chan int), make(chan int)
 
+	wg.Add(1)
 	go func() {
 		for {
-			x := <-out
-			y := <-out
-			t := <-out
+			select {
+			case x := <-out:
+				y := <-out
+				t := <-out
 
-			grid[point{x, y}] = tile(t)
+				grid[point{x, y}] = tile(t)
+			case <-time.After(500 * time.Millisecond):
+				wg.Done()
+				return
+			}
 		}
 	}()
 
@@ -44,6 +54,8 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	wg.Wait()
 
 	var countBlock int
 	for k := range grid {
