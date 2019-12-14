@@ -111,6 +111,35 @@ func findOreRequired(toProduce ingredient, rs []recipe, spare map[string]int) (i
 	return oreUsed, spare
 }
 
+func findMaxFuelFrom(ore int, rs []recipe) int {
+	var min, max int
+
+	// Find upperBound...
+	for max = 1; ; max *= 2 {
+		spare := make(map[string]int)
+		oreUsed, _ := findOreRequired(ingredient{"FUEL", max}, rs, spare)
+
+		if oreUsed > ore {
+			min = max / 2
+			break
+		}
+	}
+
+	for min + 1 < max {
+		mid := (min + max) / 2
+
+		spare := make(map[string]int)
+		oreUsed, _ := findOreRequired(ingredient{"FUEL", mid}, rs, spare)
+
+		if oreUsed > ore {
+			max = mid
+		} else if oreUsed < ore {
+			min = mid
+		}
+	}
+	return min
+}
+
 func main() {
 	rs, err := readRecipes("day14/input.txt")
 	if err != nil {
@@ -126,4 +155,8 @@ func main() {
 	log.Printf("Time taken: %s\n", d)
 
 	log.Printf("Ore required: %d\n", ore)
+
+	fuel := findMaxFuelFrom(1000000000000, rs)
+
+	log.Printf("Fuel produced: %d\n", fuel)
 }
