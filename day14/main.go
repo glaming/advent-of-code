@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strings"
+	"time"
 )
 
 type (
@@ -93,23 +95,18 @@ func findOreRequired(toProduce ingredient, rs []recipe, spare map[string]int) (i
 		spare[toProduce.name] = 0
 	}
 
-	for {
-		// Have we made enough?
-		if quantity >= toProduce.quantity {
-			spare[toProduce.name] = quantity - toProduce.quantity
-			break
-		}
-
-		// No? Run the recipe once
+	num := int(math.Ceil(float64(toProduce.quantity-quantity) / float64(r.produces.quantity)))
+	if num > 0 {
 		for _, i := range r.requires {
 			var o int
+			i.quantity *= num
 			o, spare = findOreRequired(i, rs, spare)
 			oreUsed += o
 		}
-
-		// What did we produce?
-		quantity += r.produces.quantity
+		quantity += r.produces.quantity * num
 	}
+
+	spare[toProduce.name] = quantity - toProduce.quantity
 
 	return oreUsed, spare
 }
@@ -120,8 +117,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	t := time.Now()
+
 	spare := make(map[string]int)
-	ore, _ := findOreRequired(ingredient{"FUEL", 1}, rs, spare)
+	ore, _ := findOreRequired(ingredient{"FUEL", 5000}, rs, spare)
+
+	d := time.Since(t)
+	log.Printf("Time taken: %s\n", d)
 
 	log.Printf("Ore required: %d\n", ore)
 }
