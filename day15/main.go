@@ -85,7 +85,7 @@ func nextDirection(p point, path []point, m map[point]int) (int, point) {
 		return north, n
 	}
 
-	if len(path) == 2 {
+	if len(path) == 1 {
 		return complete, path[0]
 	}
 
@@ -105,11 +105,11 @@ func nextDirection(p point, path []point, m map[point]int) (int, point) {
 	return -1, point{}
 }
 
-func traverse(in, out chan int, screen tcell.Screen) (map[point]int, int) {
+func traverse(in, out chan int, screen tcell.Screen, mode int) (map[point]int, int, int) {
 	m := make(map[point]int)
 
 	p := point{0, 0}
-	pathLength := 0
+	longestPath := 0
 	path := make([]point, 0)
 
 	for {
@@ -132,11 +132,18 @@ func traverse(in, out chan int, screen tcell.Screen) (map[point]int, int) {
 				path = path[:len(path)-1]
 			} else {
 				path = append(path, p)
+				if len(path) > longestPath {
+					longestPath = len(path)
+				}
 			}
+
 		case found:
 			p = attempted
 			path = append(path, p)
-			pathLength = len(path)
+
+			if mode != 2 {
+				return m, len(path), longestPath
+			}
 		}
 
 		if screen != nil {
@@ -144,7 +151,7 @@ func traverse(in, out chan int, screen tcell.Screen) (map[point]int, int) {
 		}
 	}
 
-	return m, pathLength
+	return m, 0, longestPath
 }
 
 func main() {
@@ -166,10 +173,14 @@ func main() {
 
 	wg.Add(1)
 	go func() {
-		_, pathLen := traverse(in, out, screen)
+		_, pathLen, _ := traverse(in, out, screen, 1)
 		screen.Clear()
 
+		_, _, longestPath := traverse(in, out, screen, 2)
+
 		log.Printf("Path length: %d\n", pathLen)
+		log.Printf("Longest path: %d\n", longestPath)
+
 		wg.Done()
 	}()
 
