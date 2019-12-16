@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 )
 
 func runeToInt(r rune) int {
@@ -56,6 +57,27 @@ func applyPhases(input, pattern []int, phases int) []int {
 	return output
 }
 
+func applyPhasesOffset(input, pattern []int, phases int) []int {
+	offsetStr := ""
+	for _, v := range input[:7] {
+		offsetStr += strconv.Itoa(v)
+	}
+	offset, _ := strconv.Atoi(offsetStr)
+
+	// Trim input to offset data length
+	output := input[offset:]
+
+	for phase := 0; phase < phases; phase++ {
+		sum := 0
+		for i := len(output) - 1; i >= 0; i-- {
+			sum += output[i]
+			output[i] = sum % 10
+		}
+	}
+
+	return output[:8]
+}
+
 func main() {
 	signal, err := readSignal("day16/input.txt")
 	if err != nil {
@@ -63,6 +85,21 @@ func main() {
 	}
 
 	outputSignal := applyPhases(signal, []int{0, 1, 0, -1}, 100)
+
+	log.Printf("Output signal after 100 phases %v\n", outputSignal)
+
+	// Re-read input
+	signal, err = readSignal("day16/input.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	realSignal := make([]int, 0)
+	for i := 0; i < 10000; i++ {
+		realSignal = append(realSignal, signal...)
+	}
+
+	outputSignal = applyPhasesOffset(realSignal, []int{0, 1, 0, -1}, 100)
 
 	log.Printf("Output signal after 100 phases %v\n", outputSignal)
 }
