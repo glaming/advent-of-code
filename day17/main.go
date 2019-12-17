@@ -74,7 +74,7 @@ func main() {
 
 	var output string
 	var wg sync.WaitGroup
-	out := make(chan int)
+	in, out := make(chan int), make(chan int)
 
 	wg.Add(1)
 	go func() {
@@ -84,6 +84,7 @@ func main() {
 				output += string(rune(v))
 			case <-time.After(100 * time.Millisecond):
 				wg.Done()
+				return
 			}
 		}
 	}()
@@ -104,4 +105,103 @@ func main() {
 	println(sum)
 
 	println(output)
+
+	// Reset the program... Part 2
+	t, err = intcode.ReadTape("day17/input.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var collected int
+	t[0] = 2
+	input := "A,A,B,B,C,B,C,B,C,A\n"
+
+	// A,A,B,B,C,B,C,B,C,A\nL,10,L,10,R,6\nR,12,L,12,L,12\nL,6,L,10,R,12,R,12\ny
+
+	wg.Add(1)
+	go func() {
+	loop:
+		for {
+			select {
+			case <-out:
+			case <-time.After(500 * time.Millisecond):
+				break loop
+			}
+		}
+
+		for _, r := range input {
+			in <- int(r)
+		}
+
+	loop2:
+		for {
+			select {
+			case <-out:
+			case <-time.After(500 * time.Millisecond):
+				break loop2
+			}
+		}
+
+		for _, r := range "L,10,L,10,R,6\n" {
+			in <- int(r)
+		}
+
+	loop3:
+		for {
+			select {
+			case <-out:
+			case <-time.After(500 * time.Millisecond):
+				break loop3
+			}
+		}
+
+		for _, r := range "R,12,L,12,L,12\n" {
+			in <- int(r)
+		}
+
+	loop4:
+		for {
+			select {
+			case <-out:
+			case <-time.After(500 * time.Millisecond):
+				break loop4
+			}
+		}
+
+		for _, r := range "L,6,L,10,R,12,R,12\n" {
+			in <- int(r)
+		}
+
+	loop5:
+		for {
+			select {
+			case <-out:
+			case <-time.After(500 * time.Millisecond):
+				break loop5
+			}
+		}
+
+		in <- int('y')
+		in <- int('\n')
+
+	loop6:
+		for {
+			select {
+			case collected = <-out:
+			case <-time.After(500 * time.Millisecond):
+				break loop6
+			}
+		}
+
+		wg.Done()
+	}()
+
+	_, err = intcode.Execute(t, in, out)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	wg.Wait()
+	println(collected)
+
 }
