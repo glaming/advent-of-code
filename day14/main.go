@@ -125,7 +125,7 @@ func findMaxFuelFrom(ore int, rs []recipe) int {
 		}
 	}
 
-	for min + 1 < max {
+	for min+1 < max {
 		mid := (min + max) / 2
 
 		spare := make(map[string]int)
