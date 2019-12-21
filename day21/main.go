@@ -12,7 +12,7 @@ func printOutput(out chan int) (f int) {
 		select {
 		case f = <-out:
 			print(string(rune(f)))
-		case <-time.After(100 * time.Millisecond):
+		case <-time.After(time.Second):
 			return f
 		}
 	}
@@ -47,7 +47,11 @@ func main() {
 		"NOT C T",
 		"OR T J",
 		"AND D J",
-		"WALK",
+		"NOT E T",
+		"NOT T T",
+		"OR H T",
+		"AND T J",
+		"RUN",
 	}
 
 	for _, line := range inputProgram {
