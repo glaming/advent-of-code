@@ -53,22 +53,8 @@ func isKey(r rune) bool {
 	return false
 }
 
-func findShortestPath(m [][]rune) int {
-	// Find start + how many keys
-	start, totalKeys := point{}, 0
-	for y, line := range m {
-		for x, r := range line {
-			if r == '@' {
-				start = point{x, y}
-			}
-			if isKey(r) {
-				k := 1 << (uint(r) - 'a')
-				totalKeys |= k
-			}
-		}
-	}
-
-	queue := []stateSteps{{state{start, 0}, 0}}
+func findShortestPath(m [][]rune, start point, keys, totalKeys int) int {
+	queue := []stateSteps{{state{start, keys}, 0}}
 	visited := make(map[state]bool)
 
 	for len(queue) > 0 {
@@ -125,6 +111,49 @@ func main() {
 		log.Fatal(err)
 	}
 
-	sp := findShortestPath(m)
-	log.Printf("Shortest path: %d\n", sp)
+	//sp := findShortestPath(m, 0)
+	//log.Printf("Shortest path: %d\n", sp)
+
+	// Part 2 - modify map
+	m[39][40] = '#'
+	m[39][40] = '#'
+	m[40][39] = '#'
+	m[40][40] = '#'
+	m[40][41] = '#'
+	m[41][40] = '#'
+
+	totalKeys := 0
+	for _, line := range m {
+		for _, r := range line {
+			if isKey(r) {
+				k := 1 << (uint(r) - 'a')
+				totalKeys |= k
+			}
+		}
+	}
+
+	segments := []struct{ a, b, start point }{
+		{point{0, 0}, point{40, 40}, point{39, 39}},
+		{point{40, 0}, point{80, 40}, point{41, 39}},
+		{point{0, 40}, point{40, 80}, point{39, 41}},
+		{point{40, 40}, point{80, 80}, point{41, 41}},
+	}
+
+	totalSteps := 0
+	for _, s := range segments {
+		segmentKeys := 0
+		for y := s.a.y; y <= s.b.y; y++ {
+			for x := s.a.x; x <= s.b.x; x++ {
+				r := m[y][x]
+				if isKey(r) {
+					k := 1 << (uint(r) - 'a')
+					segmentKeys |= k
+				}
+			}
+		}
+
+		totalSteps += findShortestPath(m, s.start, totalKeys-segmentKeys, totalKeys)
+	}
+
+	log.Printf("Shortest path: %d\n", totalSteps)
 }
