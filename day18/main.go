@@ -2,8 +2,11 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha1"
+	"fmt"
 	"log"
 	"os"
+	"sort"
 )
 
 type (
@@ -18,6 +21,20 @@ type (
 		steps   int
 	}
 )
+
+func (s state) hash() string {
+	h := sha1.New()
+
+	keys := make([]int, 0)
+	for k := range s.keys {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+
+	fmt.Fprintf(h, "%d,%d", s.point.x, s.point.y)
+	fmt.Fprintf(h, "%v", keys)
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
 
 func readMap(filename string) ([][]rune, error) {
 	file, err := os.Open(filename)
@@ -76,6 +93,7 @@ func findShortestPath(m [][]rune) int {
 	}
 
 	queue := []state{{start, make(map[point]bool), make(map[rune]bool), 0}}
+	visited := make(map[string]bool)
 
 	for len(queue) > 0 {
 		var head state
@@ -86,6 +104,7 @@ func findShortestPath(m [][]rune) int {
 		}
 
 		head.visited[head.point] = true
+		visited[head.hash()] = true
 
 		adjacent := []point{
 			{head.x - 1, head.y},
@@ -102,7 +121,7 @@ func findShortestPath(m [][]rune) int {
 			if r == '#' {
 				continue
 			}
-			if _, ok := head.keys[r+('a' - 'A')]; isDoor(r) && !ok {
+			if _, ok := head.keys[r+('a'-'A')]; isDoor(r) && !ok {
 				continue
 			}
 
@@ -114,7 +133,9 @@ func findShortestPath(m [][]rune) int {
 				s.visited = make(map[point]bool)
 			}
 
-			queue = append(queue, s)
+			if _, ok := visited[s.hash()]; !ok {
+				queue = append(queue, s)
+			}
 		}
 	}
 
