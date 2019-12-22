@@ -2,11 +2,8 @@ package main
 
 import (
 	"bufio"
-	"crypto/sha1"
-	"fmt"
 	"log"
 	"os"
-	"sort"
 )
 
 type (
@@ -16,25 +13,14 @@ type (
 
 	state struct {
 		point
-		visited map[point]bool
-		keys    map[rune]bool
-		steps   int
+		keys int
+	}
+
+	stateSteps struct {
+		state
+		steps int
 	}
 )
-
-func (s state) hash() string {
-	h := sha1.New()
-
-	keys := make([]int, 0)
-	for k := range s.keys {
-		keys = append(keys, int(k))
-	}
-	sort.Ints(keys)
-
-	fmt.Fprintf(h, "%d,%d", s.point.x, s.point.y)
-	fmt.Fprintf(h, "%v", keys)
-	return fmt.Sprintf("%x", h.Sum(nil))
-}
 
 func readMap(filename string) ([][]rune, error) {
 	file, err := os.Open(filename)
@@ -67,17 +53,6 @@ func isKey(r rune) bool {
 	return false
 }
 
-func newState(prev state, p point) state {
-	s := state{p, make(map[point]bool), make(map[rune]bool), prev.steps + 1}
-	for k := range prev.visited {
-		s.visited[k] = true
-	}
-	for k := range prev.keys {
-		s.keys[k] = true
-	}
-	return s
-}
-
 func findShortestPath(m [][]rune) int {
 	// Find start + how many keys
 	start, totalKeys := point{}, 0
@@ -87,24 +62,24 @@ func findShortestPath(m [][]rune) int {
 				start = point{x, y}
 			}
 			if isKey(r) {
-				totalKeys++
+				k := 1 << (uint(r) - 'a')
+				totalKeys |= k
 			}
 		}
 	}
 
-	queue := []state{{start, make(map[point]bool), make(map[rune]bool), 0}}
-	visited := make(map[string]bool)
+	queue := []stateSteps{{state{start, 0}, 0}}
+	visited := make(map[state]bool)
 
 	for len(queue) > 0 {
-		var head state
+		var head stateSteps
 		head, queue = queue[0], queue[1:]
 
-		if len(head.keys) == totalKeys {
+		if head.keys == totalKeys {
 			return head.steps
 		}
 
-		head.visited[head.point] = true
-		visited[head.hash()] = true
+		visited[head.state] = true
 
 		adjacent := []point{
 			{head.x - 1, head.y},
@@ -115,27 +90,29 @@ func findShortestPath(m [][]rune) int {
 
 		for _, a := range adjacent {
 			r := m[a.y][a.x]
-			if head.visited[a] {
+			if visited[state{a, head.keys}] {
 				continue
 			}
 			if r == '#' {
 				continue
 			}
-			if _, ok := head.keys[r+('a'-'A')]; isDoor(r) && !ok {
-				continue
+			if isDoor(r) {
+				// If not got a key for this door
+				if head.keys&(1<<(uint(r)-'A')) != 1<<(uint(r)-'A') {
+					continue
+				}
 			}
 
-			s := newState(head, a)
+			s := stateSteps{state{a, head.keys}, head.steps + 1}
 
-			// If found new key, add key and clear path
-			if _, ok := head.keys[r]; isKey(r) && !ok {
-				s.keys[r] = true
-				s.visited = make(map[point]bool)
+			if isKey(r) {
+				// If found new key
+				if head.keys&(1<<(uint(r)-'a')) != 1<<(uint(r)-'a') {
+					s.keys |= 1 << (uint(r) - 'a')
+				}
 			}
 
-			if _, ok := visited[s.hash()]; !ok {
-				queue = append(queue, s)
-			}
+			queue = append(queue, s)
 		}
 	}
 
