@@ -1,5 +1,7 @@
-# Advent of Code 2019
+# Advent of Code
 
-A repo for my [Advent of Code](https://adventofcode.com/) solutions for 2019.
+A repo for my [Advent of Code](https://adventofcode.com/) solutions.
 
-This is my first time taking part - not sure what to expect yet!
+Years taken part:
+* 2019 - was taking part daily and solving (mostly) 1 a day.
+* 2020 - will be taking slower as a lot else going on, but taking part for fun anyway!
