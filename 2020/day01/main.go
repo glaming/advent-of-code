@@ -39,9 +39,11 @@ func main() {
 	targetNumber := 2020
 	for _, m := range nums {
 		for _, n := range nums {
-			if m + n == targetNumber {
-				fmt.Sprintf("Solution: %d", m * n)
-				os.Exit(0)
+			for _, o := range nums {
+				if m + n + o == targetNumber {
+					fmt.Printf("Solution: %d", m * n * o)
+					os.Exit(0)
+				}
 			}
 		}
 	}
