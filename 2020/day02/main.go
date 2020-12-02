@@ -15,16 +15,13 @@ type passwordPolicyTest struct {
 
 func (p passwordPolicyTest) isValid() bool {
 	occurrences := 0
-	for _, c := range p.password {
-		if c == p.testChar {
-			occurrences++
-		}
+	if p.password[p.lowerBound-1] == byte(p.testChar) {
+		occurrences++
 	}
-
-	if occurrences >= p.lowerBound && occurrences <= p.upperBound {
-		return true
+	if p.password[p.upperBound-1] == byte(p.testChar) {
+		occurrences++
 	}
-	return false
+	return occurrences == 1
 }
 
 
