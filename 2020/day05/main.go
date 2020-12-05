@@ -5,15 +5,24 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 )
 
-type boardingpass struct {
-	row, col int
-}
+type (
+	boardingpass struct {
+		row, col int
+	}
+
+	boardingpasses []boardingpass
+)
 
 func (b boardingpass) seatID() int {
 	return b.row * 8 + b.col
 }
+
+func (b boardingpasses) Len() int           { return len(b) }
+func (b boardingpasses) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
+func (b boardingpasses) Less(i, j int) bool { return b[i].seatID() < b[j].seatID() }
 
 func readBoardingPasses(filename string) ([]boardingpass, error) {
 	file, err := os.Open(filename)
@@ -63,4 +72,14 @@ func main() {
 	}
 
 	fmt.Println("Max seatID:", maxSeatId)
+
+	sort.Sort(boardingpasses(bps))
+
+	i := 1;
+	for ; i < len(bps); i++ {
+		if bps[i].seatID() != bps[i - 1].seatID() + 1 {
+			break
+		}
+	}
+	fmt.Println("Missing seatID", bps[i - 1].seatID() + 1)
 }
