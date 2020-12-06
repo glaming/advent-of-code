@@ -7,12 +7,15 @@ import (
 	"os"
 )
 
-type form [26]int
+type form struct {
+	people int
+	ans [26]int
+}
 
 func (f form) countYeses() int {
 	count := 0
-	for _, v := range f {
-		if v > 0 {
+	for _, v := range f.ans {
+		if v == f.people {
 			count++
 		}
 	}
@@ -38,8 +41,10 @@ func readForms(filename string) ([]form, error) {
 			continue
 		}
 
+		f.people++
+
 		for _, c := range line {
-			f[c - 'a'] += 1
+			f.ans[c - 'a'] += 1
 		}
 	}
 	forms = append(forms, f)
