@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 )
 
@@ -50,6 +51,25 @@ func findFirstInvalidInt(preambleLen int, is []int) int {
 	return -1
 }
 
+func findContiguousIntsSumTo(target int, is []int) []int {
+	for i := 0; i < len(is); i++ {
+		curr := 0
+		for j := i; j < len(is); j++ {
+			curr += is[j]
+
+			if curr == target {
+				return is[i:j+1]
+			}
+
+			if curr > target {
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 func main() {
 	is, err := readInts("2020/day09/input.txt")
 	if err != nil {
@@ -59,4 +79,9 @@ func main() {
 	invalid := findFirstInvalidInt(25, is)
 
 	fmt.Println("Invalid number:", invalid)
+
+	contigInts := findContiguousIntsSumTo(invalid, is)
+	sort.Ints(contigInts)
+
+	fmt.Println("Weakness:", contigInts[0] + contigInts[len(contigInts)-1])
 }
