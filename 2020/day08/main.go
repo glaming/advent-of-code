@@ -47,14 +47,21 @@ func containsInt(is []int, i int) bool {
 	return false
 }
 
-func accValueBeforeLoop(ins []instruction) int {
-	acc := 0
+func accValueBeforeLoop(ins []instruction) (finished bool, acc int) {
+	acc = 0
 
 	var visitedInsIndex []int
 
-	for i := 0; i < len(ins); {
+	var i int
+	for i = 0; i < len(ins); {
+		if i == len(ins) {
+			return true, acc
+		}
+		if i > len(ins) {
+			return false, acc
+		}
 		if containsInt(visitedInsIndex, i) {
-			return acc
+			return false, acc
 		}
 
 		visitedInsIndex = append(visitedInsIndex, i)
@@ -71,7 +78,7 @@ func accValueBeforeLoop(ins []instruction) int {
 		i++
 	}
 
-	return acc
+	return i == len(ins), acc
 }
 
 func main() {
@@ -80,7 +87,29 @@ func main() {
 		log.Panic(err)
 	}
 
-	acc := accValueBeforeLoop(ins)
+	_, acc := accValueBeforeLoop(ins)
 	fmt.Println("Accumulator:", acc)
+
+	for i := range ins {
+		insClone := make([]instruction, len(ins))
+		copy(insClone, ins)
+
+		switch insClone[i].opcode {
+		case "jmp":
+			insClone[i].opcode = "nop"
+		case "nop":
+			insClone[i].opcode = "jmp"
+		case "acc":
+			continue
+		}
+
+		finished, acc := accValueBeforeLoop(insClone)
+		if !finished {
+			continue
+		}
+
+		fmt.Println(fmt.Println("Accumulator:", acc))
+		os.Exit(0)
+	}
 
 }
