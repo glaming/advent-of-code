@@ -34,28 +34,42 @@ func copyLayout(layout [][]rune) [][]rune {
 	return newLayout
 }
 
-func isOccupied(x, y int, layout [][]rune) bool {
+func isOccupied(x, y int, layout [][]rune) (isOccupied, isEmptySeat, isValid bool) {
 	if x < 0 || y < 0 {
-		return false
+		return false, false,false
 	}
 	if x >= len(layout[0]) || y >= len(layout) {
-		return false
+		return false, false,false
 	}
-	return layout[y][x] == '#'
+	return layout[y][x] == '#', layout[y][x] == 'L', true
 }
 
-func countAdjacentOccupied(x, y int, layout [][]rune) int {
+func countVisibleOccupied(x, y int, layout [][]rune) int {
 	count := 0
-	for i := -1; i <= 1; i++ {
-		for j := -1; j <= 1; j++ {
-			if i == 0 && j == 0 {
-				continue
+	directions := []struct{ x, y int }{
+		{1, 0},
+		{1, 1},
+		{0, 1},
+		{-1, 1},
+		{-1, 0},
+		{-1, -1},
+		{0, -1},
+		{1, -1},
+	}
+
+	for _, d := range directions {
+		for i := 1; true; i++ {
+			isOcc, isEmpty, valid := isOccupied(d.x * i + x, d.y * i + y, layout)
+			if !valid || isEmpty {
+				break
 			}
-			if isOccupied(x + i, y + j, layout) {
+			if isOcc {
 				count++
+				break
 			}
 		}
 	}
+
 	return count
 }
 
@@ -72,12 +86,12 @@ func applyRules(layout [][]rune) ([][]rune, int) {
 				continue
 			}
 
-			count := countAdjacentOccupied(x, y, layout)
+			count := countVisibleOccupied(x, y, layout)
 
 			if layout[y][x] == 'L' && count == 0 {
 				newLayout[y][x] = '#'
 				changes++
-			} else if layout[y][x] == '#' && count >= 4 {
+			} else if layout[y][x] == '#' && count >= 5 {
 				newLayout[y][x] = 'L'
 				changes++
 			}
