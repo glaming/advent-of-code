@@ -42,35 +42,39 @@ func readDirections(filename string) ([]direction, error) {
 	return directions, nil
 }
 
-func followDirections(ds []direction) point {
-	pos := point{}
-	orientations := []point{
-		{1, 0},
-		{0, 1},
-		{-1, 0},
-		{0, -1},
+func rotateWaypoint(d rune, val int, wp point) point {
+	for i := 0; i < val/90; i++ {
+		oldWp := point{wp.x, wp.y}
+		switch d {
+		case 'L':
+			wp.x = oldWp.y
+			wp.y = oldWp.x * -1
+		case 'R':
+			wp.x = oldWp.y * -1
+			wp.y = oldWp.x
+		}
 	}
-	orientIndex := 0
+	return wp
+}
+
+func followDirections(ds []direction) point {
+	pos, waypoint := point{}, point{10, -1}
 
 	for _, d := range ds {
 		switch d.action {
 		case 'N':
-			pos.y -= d.value
+			waypoint.y -= d.value
 		case 'S':
-			pos.y += d.value
+			waypoint.y += d.value
 		case 'E':
-			pos.x += d.value
+			waypoint.x += d.value
 		case 'W':
-			pos.x -= d.value
-		case 'L':
-			orientIndex = orientIndex - (d.value / 90) + 4
-			orientIndex = orientIndex % 4
-		case 'R':
-			orientIndex = orientIndex + (d.value / 90)
-			orientIndex = orientIndex % 4
+			waypoint.x -= d.value
+		case 'L', 'R':
+			waypoint = rotateWaypoint(d.action, d.value, waypoint)
 		case 'F':
-			pos.x += orientations[orientIndex].x * d.value
-			pos.y += orientations[orientIndex].y * d.value
+			pos.x += waypoint.x * d.value
+			pos.y += waypoint.y * d.value
 		}
 	}
 
