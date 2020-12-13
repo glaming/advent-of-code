@@ -27,6 +27,7 @@ func readInput(filename string) (int, []int, error) {
 	split := strings.Split(scanner.Text(), ",")
 	for _, s := range split {
 		if s == "x" {
+			buses = append(buses, -1)
 			continue
 		}
 		busId, err := strconv.Atoi(s)
@@ -49,11 +50,32 @@ func main() {
 	currTs := arrivalTs
 	for {
 		for _, b := range buses {
+			if b == -1 {
+				continue
+			}
 			if currTs % b == 0 {
 				fmt.Println("BusId * wait time:", b * (currTs-arrivalTs))
-				os.Exit(0)
+				goto Part2
 			}
 		}
 		currTs++
 	}
+
+Part2:
+	time, interval := 0, 1
+	for i, b := range buses {
+		if b == -1 {
+			continue
+		}
+
+		for {
+			if (time + i) % b == 0 {
+				break
+			}
+			time += interval
+		}
+		interval *= b
+	}
+
+	fmt.Println("Minimum time:", time)
 }
