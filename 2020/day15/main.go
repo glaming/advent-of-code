@@ -10,7 +10,7 @@ func main() {
 		lastSpoken[n] = i+1
 	}
 
-	for i := len(numbers); i < 2020; i++ {
+	for i := len(numbers); i < 30000000; i++ {
 		prevNum := numbers[i-1]
 		n, ok := lastSpoken[prevNum]
 
@@ -22,5 +22,5 @@ func main() {
 		numbers = append(numbers, spokenNum)
 	}
 
-	fmt.Println(numbers[2019])
+	fmt.Println(numbers[29999999])
 }
