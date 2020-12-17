@@ -16,8 +16,9 @@ type (
 	}
 
 	rule struct {
-		label  string
-		ranges [2]validRange
+		label    string
+		ranges   [2]validRange
+		position int
 	}
 )
 
@@ -61,8 +62,9 @@ func readInput(filename string) ([]rule, []int, [][]int, error) {
 			break
 		}
 
-		var r rule
+		r := rule{position: -1}
 		split := strings.Split(line, ": ")
+		r.label = split[0]
 		_, err := fmt.Sscanf(split[1], "%d-%d or %d-%d", &r.ranges[0].min, &r.ranges[0].max, &r.ranges[1].min, &r.ranges[1].max)
 		if err != nil {
 			return nil, nil, nil, err
@@ -97,14 +99,41 @@ func readInput(filename string) ([]rule, []int, [][]int, error) {
 	return rules, yourTicket, nearbyTickets, nil
 }
 
+func getRulesValidForPosition(rules []rule, validTickets [][]int) map[int][]rule {
+	validForPosition := make(map[int][]rule, 0)
+
+	for i := range validTickets[0] {
+		var validRules []rule
+
+		for _, r := range rules {
+			validRule := true
+			for _, ticket := range validTickets {
+				if !r.isValueValid(ticket[i]) {
+					validRule = false
+					break
+				}
+			}
+			if validRule {
+				validRules = append(validRules, r)
+			}
+		}
+
+		validForPosition[i] = validRules
+	}
+
+	return validForPosition
+}
+
 func main() {
-	rules, _, nearbyTickets, err := readInput("2020/day16/input.txt")
+	rules, yourTicket, nearbyTickets, err := readInput("2020/day16/input.txt")
 	if err != nil {
 		log.Panic(err)
 	}
 
 	var errorRate int
+	var validTickets [][]int
 	for _, ticket := range nearbyTickets {
+		ticketValid := true
 		for _, v := range ticket {
 			valueValid := false
 
@@ -116,10 +145,58 @@ func main() {
 			}
 
 			if !valueValid {
+				ticketValid = false
 				errorRate += v
+				break
 			}
+		}
+
+		if ticketValid {
+			validTickets = append(validTickets, ticket)
 		}
 	}
 
 	fmt.Println("Ticket scanning error rate:", errorRate)
+
+	rulesValidForPosition := getRulesValidForPosition(rules, validTickets)
+	for {
+		newRulesMatched := false
+
+		// What positions only have 1 rule available
+		for i, rs := range rulesValidForPosition {
+			if len(rs) != 1 || rs[0].position != -1 {
+				continue
+			}
+
+			rs[0].position = i
+			newRulesMatched = true
+
+			// remove this rule from all other positions...
+			for j, rsj := range rulesValidForPosition {
+				if i == j {
+					continue
+				}
+				for k, r := range rsj {
+					if r.label == rs[0].label {
+						rulesValidForPosition[j] = append(rsj[0:k], rsj[k+1:]...)
+						break
+					}
+				}
+			}
+		}
+
+		if !newRulesMatched {
+			break
+		}
+	}
+
+	// Only 1 value now for each position
+	multipedVal := 1
+	for _, rs := range rulesValidForPosition {
+		if strings.HasPrefix(rs[0].label, "departure") {
+			multipedVal *= yourTicket[rs[0].position]
+		}
+	}
+
+	fmt.Println("Multipled val", multipedVal)
 }
