@@ -17,9 +17,6 @@ type (
 		id                  int
 		data                []string
 		edges, edgesReverse [4]string
-		neighbours          [4]int
-		connected           bool
-		coords              point
 	}
 )
 
@@ -91,17 +88,10 @@ func main() {
 		log.Panic(err)
 	}
 
-	tiles[0].connected = true
-
-	tileMap := make(map[int]tile, 0)
-	for _, t := range tiles {
-		tileMap[t.id] = t
-	}
-
 	tileConnections := make(map[int][]int, 0)
-	for id, t := range tileMap {
-		for ttid, tt := range tileMap {
-			if id == ttid {
+	for _, t := range tiles {
+		for _, tt := range tiles {
+			if t.id == tt.id {
 				continue
 			}
 
@@ -115,13 +105,13 @@ func main() {
 			}
 
 			if connects {
-				tileConnections[id] = append(tileConnections[id], ttid)
+				tileConnections[t.id] = append(tileConnections[t.id], tt.id)
 			}
 		}
 	}
 
 	var corners []tile
-	for _, t := range tileMap {
+	for _, t := range tiles {
 		if len(tileConnections[t.id]) == 2 {
 			corners = append(corners, t)
 		}
